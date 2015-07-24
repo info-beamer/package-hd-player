@@ -1,6 +1,6 @@
 {
     "name": "HD Image/Video Player",
     "author": "Florian Wesch <fw@dividuum.de>",
-    "desc": "Displays images, videos or other packages in a rotation",
-    "repository": "https://github.com/info-beamer/package-simple-playlist"
+    "desc": "Displays images and videos in a rotation",
+    "repository": "https://github.com/info-beamer/package-hd-player"
 }
