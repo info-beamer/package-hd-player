@@ -1,0 +1,26 @@
+= HD Image/Video Player
+
+{{screenshot.jpg|Screenshot}}
+
+== Description
+
+A very simple media player that can display FullHD videos as well as PNG/JPEG images.
+
+== Example usage
+
+You can use this Package to display a bunch of images. Upload the images using the <<assets>>. Then create a new Setup based
+on this Package. To do that, go to the <<packages>>, select the //HD Player// Package and then click the //Create Setup//
+button. Give your new Setup a name.
+
+The configuration screen for your new Setup allows you to specify which assets you want to play. Click the //Add item// 
+Button for each Asset you want to play. In the new row that appears, select the //Asset// field. Delete the default value
+(empty.png) and select the image you previously uploaded.
+
+When done, click save. Your Setup is now ready for your Device.
+
+== Settings
+
+=== Switch Time (switch_time)
+
+Selects the duration of the fade to black effect that happens between media files. You can choose from a
+set of different durations ranging from Instantly (the is no visible effect) to 0.8 seconds.
