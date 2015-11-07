@@ -1,7 +1,5 @@
 = HD Image/Video Player
 
-{{screenshot.jpg|Screenshot}}
-
 == Description
 
 A very simple media player that can display FullHD videos as well as PNG/JPEG images.
