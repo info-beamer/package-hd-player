@@ -1,11 +1,11 @@
 {
-    "name": "Playlist",
+    "name": "Player",
     "options": [{
-        "title": "Appearance",
+        "title": "Configuration",
         "type": "section"
     }, {
         "title": "Switch time",
-        "ui_width": 4,
+        "ui_width": 3,
         "name": "switch_time",
         "type": "select",
         "doc_link": true,
@@ -16,6 +16,30 @@
             [0.8, "Long"]
         ],
         "default": 0.4
+    }, {
+        "title": "Synchronized start",
+        "ui_width": 3,
+        "name": "synced",
+        "type": "boolean",
+        "hint": "Start play list items sychronized (based on global time)",
+        "doc_link": true,
+        "default": false
+    }, {
+        "title": "Ken Burns effect",
+        "ui_width": 3,
+        "name": "kenburns",
+        "type": "boolean",
+        "hint": "Use Ken Burns effect for images",
+        "doc_link": true,
+        "default": false
+    }, {
+        "title": "Audio",
+        "ui_width": 3,
+        "name": "audio",
+        "type": "boolean",
+        "hint": "Play audio for all videos",
+        "doc_link": true,
+        "default": false
     },
 
     {

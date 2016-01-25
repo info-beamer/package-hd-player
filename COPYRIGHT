@@ -1,4 +1,4 @@
-Copyright (C) 2015 Florian Wesch <fw@dividuum.de>
+Copyright (C) 2015, 2016 Florian Wesch <fw@dividuum.de>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,11 +19,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 
-
 This project includes third party work:
 
 package.png:
    Icon created by John T. Garcia (https://thenounproject.com/tongal/)
+
+screenshot.jpg
+   A snapshot from the movie Sintel (https://durian.blender.org/)
+
+screenshot-1.jpg
+   A snapshot from the movie Big Buck Bunny (https://peach.blender.org/)
 
 package-header.jpg
    Original image by NASA's Goddard Space Flight Center/S. Wiessinger:
