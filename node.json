@@ -21,7 +21,7 @@
         "ui_width": 3,
         "name": "synced",
         "type": "boolean",
-        "hint": "Start play list items sychronized (based on global time)",
+        "hint": "Start play list items synchronized on multiple devices (based on global time)",
         "doc_link": true,
         "default": false
     }, {
