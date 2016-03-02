@@ -15,7 +15,7 @@
             [0.4, "Medium (default)"],
             [0.8, "Long"]
         ],
-        "default": 0.4
+        "default": 0.0
     }, {
         "title": "Synchronized start",
         "ui_width": 3,
