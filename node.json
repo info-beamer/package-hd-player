@@ -29,7 +29,7 @@
         "ui_width": 3,
         "name": "kenburns",
         "type": "boolean",
-        "hint": "Use Ken Burns effect for images",
+        "hint": "Slowly pan and zoom displayed images",
         "doc_link": true,
         "default": false
     }, {
