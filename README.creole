@@ -24,6 +24,11 @@ Selects the duration of the fade to black effect that happens between media
 files. You can choose from a set of different durations ranging from Instantly
 (the is no visible effect) to 0.8 seconds.
 
+=== Rotation (rotation)
+
+You can rotate the content in 90 degree increments so it plays
+correctly on portrait or landscape screens.
+
 === Synchronized Start (synced)
 
 Allows you to play one or multiple playlist synchronized accross multiple
@@ -43,3 +48,9 @@ displayed. The movement is chosen randomly from a predefined set.
 === Play audio (audio)
 
 Play audio track for all video files. By default the playback is silent.
+
+== Problems?
+
+Please report any problems you encounter using this package here:
+
+https://github.com/info-beamer/package-hd-player/issues

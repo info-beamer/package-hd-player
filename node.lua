@@ -90,6 +90,9 @@ local Config = (function()
     local synced = false
     local kenburns = false
     local audio = false
+    local portrait = false
+    local rotation = 0
+    local transform = function() end
 
     util.file_watch("config.json", function(raw)
         print "updated config.json"
@@ -98,6 +101,12 @@ local Config = (function()
         synced = config.synced
         kenburns = config.kenburns
         audio = config.audio
+
+        rotation = config.rotation
+        portrait = rotation == 90 or rotation == 270
+        gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
+        transform = util.screen_transform(rotation)
+        print("screen size is " .. WIDTH .. "x" .. HEIGHT)
 
         if #config.playlist == 0 then
             playlist = settings.FALLBACK_PLAYLIST
@@ -128,7 +137,6 @@ local Config = (function()
             end
             switch_time = config.switch_time
         end
-
     end)
 
     return {
@@ -137,6 +145,8 @@ local Config = (function()
         get_synced = function() return synced end;
         get_kenburns = function() return kenburns end;
         get_audio = function() return audio end;
+        get_rotation = function() return rotation, portrait end;
+        apply_transform = function() return transform() end;
     }
 end)()
 
@@ -253,15 +263,18 @@ local VideoJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts)
     print "starting"
 
-    local _, width, height = res:state()
     res:layer(-1):start()
 
-    local x1, y1, x2, y2 = util.scale_into(WIDTH, HEIGHT, width, height)
-
     for now in fn.wait_next_frame do
+        local rotation, portrait = Config.get_rotation()
+        local _, width, height = res:state()
+        if portrait then
+            width, height = height, width
+        end
+        local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
         res:target(x1, y1, x2, y2, ramp(
             ctx.starts, ctx.ends, now, Config.get_switch_time()
-        ))
+        )):rotate(rotation)
         if now > ctx.ends then
             break
         end
@@ -425,5 +438,6 @@ util.set_interval(1, node.gc)
 
 function node.render()
     gl.clear(0, 0, 0, 1)
+    Config.apply_transform()
     Queue.tick()
 end

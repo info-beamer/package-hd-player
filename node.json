@@ -17,11 +17,25 @@
         ],
         "default": 0.0
     }, {
-        "title": "Synchronized start",
-        "ui_width": 3,
+        "title": "Rotation",
+        "ui_width": 2,
+        "name": "rotation",
+        "type": "select",
+        "hint": "Rotate content clockwise?",
+        "doc_link": true,
+        "options": [
+            [0, "None"],
+            [90, "90°"],
+            [180, "180°"],
+            [270, "270°"]
+        ],
+        "default": 0
+    }, {
+        "title": "Synced",
+        "ui_width": 2,
         "name": "synced",
         "type": "boolean",
-        "hint": "Start play list items synchronized on multiple devices (based on global time)",
+        "hint": "Start play list items synchronized on multiple devices (based on the global wall clock time)",
         "doc_link": true,
         "default": false
     }, {
@@ -34,7 +48,7 @@
         "default": false
     }, {
         "title": "Audio",
-        "ui_width": 3,
+        "ui_width": 2,
         "name": "audio",
         "type": "boolean",
         "hint": "Play audio for all videos",
