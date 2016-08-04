@@ -24,6 +24,27 @@ local shaders = {
             gl_FragColor = texture2D(Texture, TexCoord * vec2(s, s) + vec2(x, y)) * Color;
         }
     ]], 
+    progress = resource.create_shader[[
+        uniform sampler2D Texture;
+        varying vec2 TexCoord;
+        uniform float progress_angle;
+
+        float interp(float x) {
+            return 2.0 * x * x * x - 3.0 * x * x + 1.0;
+        }
+
+        void main() {
+            vec2 pos = TexCoord;
+            float angle = atan(pos.x - 0.5, pos.y - 0.5);
+            float dist = clamp(distance(pos, vec2(0.5, 0.5)), 0.0, 0.5) * 2.0;
+            float alpha = interp(pow(dist, 8.0));
+            if (angle > progress_angle) {
+                gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+            } else {
+                gl_FragColor = vec4(0.5, 0.5, 0.5, alpha);
+            }
+        }
+    ]]
 }
 
 local settings = {
@@ -42,6 +63,10 @@ local settings = {
     }
 }
 
+local white = resource.create_colored_texture(1,1,1,1)
+local black = resource.create_colored_texture(0,0,0,1)
+local font = resource.load_font "roboto.ttf"
+
 local function ramp(t_s, t_e, t_c, ramp_time)
     if ramp_time == 0 then return 1 end
     local delta_s = t_c - t_s
@@ -55,8 +80,6 @@ local function cycled(items, offset)
 end
 
 local Loading = (function()
-    local font = resource.load_font "roboto.ttf"
-
     local loading = "Loading..."
     local size = 80
     local w = font:width(loading, size)
@@ -101,6 +124,7 @@ local Config = (function()
         synced = config.synced
         kenburns = config.kenburns
         audio = config.audio
+        progress = config.progress
 
         rotation = config.rotation
         portrait = rotation == 90 or rotation == 270
@@ -145,6 +169,7 @@ local Config = (function()
         get_synced = function() return synced end;
         get_kenburns = function() return kenburns end;
         get_audio = function() return audio end;
+        get_progress = function() return progress end;
         get_rotation = function() return rotation, portrait end;
         apply_transform = function() return transform() end;
     }
@@ -165,6 +190,46 @@ local Scheduler = (function()
         get_next = get_next;
     }
 end)()
+
+local function draw_progress(starts, ends, now)
+    local mode = Config.get_progress()
+    if mode == "no" then
+        return
+    end
+
+    if ends - starts < 2 then
+        return
+    end
+
+    local progress = 1.0 / (ends - starts) * (now - starts)
+    if mode == "bar_thin_white" then
+        white:draw(0, HEIGHT-10, WIDTH*progress, HEIGHT, 0.5)
+    elseif mode == "bar_thick_white" then
+        white:draw(0, HEIGHT-20, WIDTH*progress, HEIGHT, 0.5)
+    elseif mode == "bar_thin_black" then
+        black:draw(0, HEIGHT-10, WIDTH*progress, HEIGHT, 0.5)
+    elseif mode == "bar_thick_black" then
+        black:draw(0, HEIGHT-20, WIDTH*progress, HEIGHT, 0.5)
+    elseif mode == "circle" then
+        shaders.progress:use{
+            progress_angle = math.pi - progress * math.pi * 2
+        }
+        white:draw(WIDTH-40, HEIGHT-40, WIDTH-10, HEIGHT-10)
+        shaders.progress:deactivate()
+    elseif mode == "countdown" then
+        local remaining = math.ceil(ends - now)
+        local text
+        if remaining >= 60 then
+            text = string.format("%d:%02d", remaining / 60, remaining % 60)
+        else
+            text = remaining
+        end
+        local size = 32
+        local w = font:width(text, size)
+        black:draw(WIDTH - w - 4, HEIGHT - size - 4, WIDTH, HEIGHT, 0.6)
+        font:write(WIDTH - w - 2, HEIGHT - size - 2, text, size, 1,1,1,0.8)
+    end
+end
 
 local ImageJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.IMAGE_PRELOAD)
@@ -218,6 +283,7 @@ local ImageJob = function(item, ctx, fn)
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
+            draw_progress(ctx.starts, ctx.ends, now)
             if now > ctx.ends then
                 break
             end
@@ -227,6 +293,7 @@ local ImageJob = function(item, ctx, fn)
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
+            draw_progress(ctx.starts, ctx.ends, now)
             if now > ctx.ends then
                 break
             end
@@ -275,6 +342,7 @@ local VideoJob = function(item, ctx, fn)
         res:target(x1, y1, x2, y2, ramp(
             ctx.starts, ctx.ends, now, Config.get_switch_time()
         )):rotate(rotation)
+        draw_progress(ctx.starts, ctx.ends, now)
         if now > ctx.ends then
             break
         end

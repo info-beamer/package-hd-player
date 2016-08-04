@@ -5,7 +5,7 @@
         "type": "section"
     }, {
         "title": "Switch time",
-        "ui_width": 3,
+        "ui_width": 4,
         "name": "switch_time",
         "type": "select",
         "doc_link": true,
@@ -17,8 +17,8 @@
         ],
         "default": 0.0
     }, {
-        "title": "Rotation",
-        "ui_width": 2,
+        "title": "Display rotation",
+        "ui_width": 4,
         "name": "rotation",
         "type": "select",
         "hint": "Rotate content clockwise?",
@@ -31,24 +31,41 @@
         ],
         "default": 0
     }, {
-        "title": "Synced",
-        "ui_width": 2,
+        "title": "Progress indicator",
+        "ui_width": 4,
+        "name": "progress",
+        "type": "select",
+        "hint": "Shows how long the current playlist item is displayed",
+        "doc_link": true,
+        "options": [
+            ["no", "Disabled"],
+            ["bar_thin_white", "Bar (thin, white)"],
+            ["bar_thick_white", "Bar (thick, white)"],
+            ["bar_thin_black", "Bar (thin, black)"],
+            ["bar_thick_black", "Bar (thick, black)"],
+            ["circle", "Circle"],
+            ["countdown", "Countdown"]
+        ],
+        "default": 0
+    }, {
+        "title": "Synced playback",
+        "ui_width": 4,
         "name": "synced",
         "type": "boolean",
         "hint": "Start play list items synchronized on multiple devices (based on the global wall clock time)",
         "doc_link": true,
         "default": false
     }, {
-        "title": "Ken Burns effect",
-        "ui_width": 3,
+        "title": "Ken Burns effect for images",
+        "ui_width": 4,
         "name": "kenburns",
         "type": "boolean",
-        "hint": "Slowly pan and zoom displayed images",
+        "hint": "Slowly pan and zoom displayed images using the Ken Burns effect",
         "doc_link": true,
         "default": false
     }, {
-        "title": "Audio",
-        "ui_width": 2,
+        "title": "Play audio for videos",
+        "ui_width": 4,
         "name": "audio",
         "type": "boolean",
         "hint": "Play audio for all videos",
@@ -57,6 +74,9 @@
     },
 
     {
+        "title": "What to display",
+        "type": "section"
+    }, {
         "title": "Playlist",
         "name": "playlist",
         "type": "list",
