@@ -29,6 +29,11 @@ files. You can choose from a set of different durations ranging from Instantly
 You can rotate the content in 90 degree increments so it plays
 correctly on portrait or landscape screens.
 
+=== Progress indicator (progress)
+
+Displays an optional progress indicator that allows viewers to see how
+long the current content will be shown on the screen.
+
 === Synchronized Start (synced)
 
 Allows you to play one or multiple playlist synchronized accross multiple
