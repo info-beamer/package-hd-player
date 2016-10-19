@@ -307,7 +307,7 @@ end
 
 
 local VideoJob = function(item, ctx, fn)
-    fn.wait_t(ctx.starts - settings.IMAGE_PRELOAD)
+    fn.wait_t(ctx.starts - settings.VIDEO_PRELOAD)
 
     local raw = sys.get_ext "raw_video"
     local res = raw.load_video{
