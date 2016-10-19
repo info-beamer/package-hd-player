@@ -248,7 +248,8 @@ local ImageJob = function(item, ctx, fn)
     print "waiting for start"
     local starts = fn.wait_t(ctx.starts)
     local duration = ctx.ends - starts
-    print "starting"
+
+    print(">>> IMAGE", res, ctx.starts, ctx.ends)
 
     if Config.get_kenburns() then
         local function lerp(s, e, t)
@@ -273,7 +274,8 @@ local ImageJob = function(item, ctx, fn)
         local multisample = w / WIDTH > 0.8 or h / HEIGHT > 0.8
         local shader = multisample and shaders.multisample or shaders.simple
         
-        for now in fn.wait_next_frame do
+        while true do
+            local now = sys.now()
             local t = (now - starts) / duration
             shader:use{
                 x = lerp(from.x, to.x, t);
@@ -287,9 +289,11 @@ local ImageJob = function(item, ctx, fn)
             if now > ctx.ends then
                 break
             end
+            fn.wait_next_frame()
         end
     else
-        for now in fn.wait_next_frame do
+        while true do
+            local now = sys.now()
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
@@ -297,11 +301,13 @@ local ImageJob = function(item, ctx, fn)
             if now > ctx.ends then
                 break
             end
+            fn.wait_next_frame()
         end
     end
 
+    print("<<< IMAGE", res, ctx.starts, ctx.ends)
     res:dispose()
-    print "image job completed"
+
     return true
 end
 
@@ -328,29 +334,41 @@ local VideoJob = function(item, ctx, fn)
 
     print "waiting for start"
     fn.wait_t(ctx.starts)
-    print "starting"
 
-    res:layer(-1):start()
+    print(">>> VIDEO", res, ctx.starts, ctx.ends)
+    res:start()
 
-    for now in fn.wait_next_frame do
+    while true do
+        local now = sys.now()
         local rotation, portrait = Config.get_rotation()
-        local _, width, height = res:state()
-        if portrait then
-            width, height = height, width
+        local state, width, height = res:state()
+        if state ~= "finished" then
+            local layer = -2
+            if now > ctx.starts + 0.1 then
+                -- after the video started, put it on a more
+                -- foregroundy layer. that way two videos
+                -- played after one another are sorted in a
+                -- predictable way and no flickering occurs.
+                layer = -1
+            end
+            if portrait then
+                width, height = height, width
+            end
+            local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
+            res:layer(layer):rotate(rotation):target(x1, y1, x2, y2, ramp(
+                ctx.starts, ctx.ends, now, Config.get_switch_time()
+            ))
         end
-        local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-        res:target(x1, y1, x2, y2, ramp(
-            ctx.starts, ctx.ends, now, Config.get_switch_time()
-        )):rotate(rotation)
         draw_progress(ctx.starts, ctx.ends, now)
         if now > ctx.ends then
             break
         end
+        fn.wait_next_frame()
     end
 
-    fn.wait_next_frame()
+    print("<<< VIDEO", res, ctx.starts, ctx.ends)
     res:dispose()
-    print "video job completed"
+
     return true
 end
 
@@ -404,7 +422,7 @@ local Queue = (function()
             wait_t = function(t)
                 while true do
                     local now = coroutine.yield(false)
-                    if now >= t then
+                    if now > t then
                         return now
                     end
                 end
@@ -505,6 +523,7 @@ end)()
 util.set_interval(1, node.gc)
 
 function node.render()
+    -- print("--- frame", sys.now())
     gl.clear(0, 0, 0, 1)
     Config.apply_transform()
     Queue.tick()
