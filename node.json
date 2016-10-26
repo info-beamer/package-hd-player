@@ -71,6 +71,13 @@
         "hint": "Play audio for all videos",
         "doc_link": true,
         "default": false
+    }, {
+        "title": "Custom placement",
+        "ui_width": 4,
+        "name": "placement",
+        "type": "string",
+        "hint": "Allows you to place the content on a custom region of the screen. Use <x> <y> <w> <h>",
+        "default": ""
     },
 
     {

@@ -1,6 +1,21 @@
-gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
+local settings = {
+    IMAGE_PRELOAD = 2;
+    VIDEO_PRELOAD = 2;
+    PRELOAD_TIME = 5;
+    FALLBACK_PLAYLIST = {
+        {
+            index = 1;
+            offset = 0;
+            total_duration = 1;
+            duration = 1;
+            asset_name = "blank.png";
+            type = "image";
+        }
+    },
+}
 
 local json = require "json"
+local placement = require "placement"
 
 local shaders = {
     multisample = resource.create_shader[[
@@ -45,22 +60,6 @@ local shaders = {
             }
         }
     ]]
-}
-
-local settings = {
-    IMAGE_PRELOAD = 2;
-    VIDEO_PRELOAD = 2;
-    PRELOAD_TIME = 5;
-    FALLBACK_PLAYLIST = {
-        {
-            index = 1;
-            offset = 0;
-            total_duration = 1;
-            duration = 1;
-            asset_name = "blank.png";
-            type = "image";
-        }
-    }
 }
 
 local white = resource.create_colored_texture(1,1,1,1)
@@ -113,9 +112,7 @@ local Config = (function()
     local synced = false
     local kenburns = false
     local audio = false
-    local portrait = false
-    local rotation = 0
-    local transform = function() end
+    local screen
 
     util.file_watch("config.json", function(raw)
         print "updated config.json"
@@ -126,11 +123,28 @@ local Config = (function()
         audio = config.audio
         progress = config.progress
 
-        rotation = config.rotation
-        portrait = rotation == 90 or rotation == 270
-        gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
-        transform = util.screen_transform(rotation)
-        print("screen size is " .. WIDTH .. "x" .. HEIGHT)
+        if config.placement == "" then
+            screen = placement.Screen{
+                x = 0,
+                y = 0,
+                width = NATIVE_WIDTH,
+                height = NATIVE_HEIGHT,
+                rotation = config.rotation,
+            }
+        else
+            local pl = {}
+            for token in string.gmatch(config.placement, "%d+") do
+                pl[#pl+1] = tonumber(token)
+            end
+            pp(pl)
+            screen = placement.Screen{
+                x = pl[1],
+                y = pl[2],
+                width = pl[3],
+                height = pl[4],
+                rotation = config.rotation,
+            }
+        end
 
         if #config.playlist == 0 then
             playlist = settings.FALLBACK_PLAYLIST
@@ -170,8 +184,7 @@ local Config = (function()
         get_kenburns = function() return kenburns end;
         get_audio = function() return audio end;
         get_progress = function() return progress end;
-        get_rotation = function() return rotation, portrait end;
-        apply_transform = function() return transform() end;
+        get_screen = function() return screen end;
     }
 end)()
 
@@ -226,8 +239,8 @@ local function draw_progress(starts, ends, now)
         end
         local size = 32
         local w = font:width(text, size)
-        black:draw(WIDTH - w - 4, HEIGHT - size - 4, WIDTH, HEIGHT, 0.6)
-        font:write(WIDTH - w - 2, HEIGHT - size - 2, text, size, 1,1,1,0.8)
+        black:draw(WIDTH - w - 7, HEIGHT - size - 4, WIDTH, HEIGHT, 0.6)
+        font:write(WIDTH - w - 3, HEIGHT - size - 0, text, size, 1,1,1,0.8)
     end
 end
 
@@ -340,7 +353,6 @@ local VideoJob = function(item, ctx, fn)
 
     while true do
         local now = sys.now()
-        local rotation, portrait = Config.get_rotation()
         local state, width, height = res:state()
         if state ~= "finished" then
             local layer = -2
@@ -351,13 +363,9 @@ local VideoJob = function(item, ctx, fn)
                 -- predictable way and no flickering occurs.
                 layer = -1
             end
-            if portrait then
-                width, height = height, width
-            end
-            local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-            res:layer(layer):rotate(rotation):target(x1, y1, x2, y2, ramp(
+            Config.get_screen().fit(res):alpha(ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
-            ))
+            )):layer(layer):start()
         end
         draw_progress(ctx.starts, ctx.ends, now)
         if now > ctx.ends then
@@ -478,8 +486,6 @@ local Queue = (function()
     end
 
     local function tick()
-        gl.clear(0, 0, 0, 0)
-
         if Config.get_synced() then
             if sys.now() + settings.PRELOAD_TIME > scheduled_until then
                 schedule_synced()
@@ -524,7 +530,7 @@ util.set_interval(1, node.gc)
 
 function node.render()
     -- print("--- frame", sys.now())
-    gl.clear(0, 0, 0, 1)
-    Config.apply_transform()
+    gl.clear(0, 0, 0, 0)
+    Config.get_screen().setup()
     Queue.tick()
 end
