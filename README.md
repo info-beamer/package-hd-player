@@ -1,40 +1,40 @@
-== Description
+# Description
 
 A very simple media player that can display FullHD videos as well as PNG/JPEG images.
 
-== Example usage
+# Example usage
 
 You can use this Package to display a bunch of images. Upload the images using
-the <<assets>>. Then create a new Setup based on this Package. To do that, go to
-the <<packages>>, select the //HD Player// Package and then click the //Create
-Setup// button. Give your new Setup a name.
+the assets page. Then create a new Setup based on this Package. To do that, go to
+the packages page, select the **HD Player** Package and then click the **Create Setup**
+button. Give your new Setup a name.
 
 The configuration screen for your new Setup allows you to specify which assets
-you want to play. Click the //Add item// Button for each Asset you want to play.
-In the new row that appears, select the //Asset// field. Delete the default
+you want to play. Click the **Add item** Button for each Asset you want to play.
+In the new row that appears, select the **Asset** field. Delete the default
 value (empty.png) and select the image you previously uploaded.
 
 When done, click save. Your Setup is now ready for your Device.
 
-== Settings
+# Settings
 
-=== Switch Time (switch_time)
+## Switch Time (switch_time)
 
 Selects the duration of the fade to black effect that happens between media
 files. You can choose from a set of different durations ranging from Instantly
 (the is no visible effect) to 0.8 seconds.
 
-=== Rotation (rotation)
+## Rotation (rotation)
 
 You can rotate the content in 90 degree increments so it plays
 correctly on portrait or landscape screens.
 
-=== Progress indicator (progress)
+## Progress indicator (progress)
 
 Displays an optional progress indicator that allows viewers to see how
 long the current content will be shown on the screen.
 
-=== Synchronized Start (synced)
+## Synchronized Start (synced)
 
 Allows you to play one or multiple playlist synchronized accross multiple
 devices. If you play the same playlist or different playlists of the same total
@@ -44,17 +44,17 @@ will start at every full minute, every 10 seconds past the full minute and so
 on. Since every device can calculate the start time solely based on the current
 time and the playlist length, no network connection is required between devices.
 
-=== Ken Burns effect for images (kenburns)
+## Ken Burns effect for images (kenburns)
 
-Uses the [[https://en.wikipedia.org/wiki/Ken_Burns_effect|Ken Burns effect]] for
+Uses the [Ken Burns effect](https://en.wikipedia.org/wiki/Ken_Burns_effect) for
 all images displayed.  Each image will slowly pan and zoom while it is
 displayed. The movement is chosen randomly from a predefined set.
 
-=== Play audio (audio)
+## Play audio (audio)
 
 Play audio track for all video files. By default the playback is silent.
 
-== Problems?
+## Problems?
 
 Please report any problems you encounter using this package here:
 
