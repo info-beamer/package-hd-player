@@ -1,3 +1,5 @@
+[![Import](https://cdn.infobeamer.com/s/img/import.png)](https://info-beamer.com/use?url=https://github.com/info-beamer/package-hd-player)
+
 # Description
 
 A very simple media player that can display FullHD videos as well as PNG/JPEG images.
