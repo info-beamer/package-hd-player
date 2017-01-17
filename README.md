@@ -56,6 +56,18 @@ displayed. The movement is chosen randomly from a predefined set.
 
 Play audio track for all video files. By default the playback is silent.
 
+# Running outside of info-beamer hosted
+
+All info-beamer hosted packages can be run with the standalone
+info-beamer pi program with a little (or a little more) works. All
+you have to do for this packages is to create a `config.json` file.
+
+Put all your images/videos into the package directory (next to the
+node.lua file, then run the `mkconfig` python script to create a
+`config.json` that will play them. The `mkconfig` script is an
+example of how to create such a `config.json`. You might want to
+adapt the file or take a whole different approach.
+
 ## Problems?
 
 Please report any problems you encounter using this package here:
