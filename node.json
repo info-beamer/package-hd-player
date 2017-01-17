@@ -46,7 +46,7 @@
             ["circle", "Circle"],
             ["countdown", "Countdown"]
         ],
-        "default": 0
+        "default": "no"
     }, {
         "title": "Synced playback",
         "ui_width": 4,
