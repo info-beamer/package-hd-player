@@ -117,8 +117,22 @@ local Config = (function()
     local rotation = 0
     local transform = function() end
 
-    util.file_watch("config.json", function(raw)
-        print "updated config.json"
+    local config_file = "config.json"
+
+    -- You can put a static-config.json file into the package directory.
+    -- That way the config.json provided by info-beamer hosted will be
+    -- ignored and static-config.json is used instead.
+    --
+    -- This allows you to import this package bundled with images/
+    -- videos and a custom generated configuration without changing
+    -- any of the source code.
+    if CONTENTS["static-config.json"] then
+        config_file = "static-config.json"
+        print "[WARNING]: will use static-config.json, so config.json is ignored"
+    end
+
+    util.file_watch(config_file, function(raw)
+        print("updated " .. config_file)
         local config = json.decode(raw)
 
         synced = config.synced
