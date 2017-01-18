@@ -1,5 +1,14 @@
 #!/usr/bin/python
-import os, json
+import os, json, subprocess
+
+IMAGE_DURATION = 5
+
+# If you get an error, install the libav-tools package for the avprobe program:
+# apt-get install libav-tools
+def video_duration(fname):
+    return float(subprocess.Popen([
+        "avprobe", "-show_format_entry", "duration", fname
+    ], stdout=subprocess.PIPE, stderr=file('/dev/null', 'wb')).stdout.read())
 
 assets = []
 for fname in os.listdir('.'):
@@ -9,10 +18,9 @@ for fname in os.listdir('.'):
     ):
         continue
     if fname.endswith('.jpg') or fname.endswith('.png'):
-        assets.append((fname, "image", 5))
+        assets.append((fname, "image", IMAGE_DURATION))
     if fname.endswith('.mp4'):
-        assets.append((fname, "video", 5))
-
+        assets.append((fname, "video", video_duration(fname)))
 assets.sort()
 
 with file('config.json', 'wb') as f:
