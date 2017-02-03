@@ -53,7 +53,6 @@ local settings = {
     PRELOAD_TIME = 5;
     FALLBACK_PLAYLIST = {
         {
-            index = 1;
             offset = 0;
             total_duration = 1;
             duration = 1;
@@ -163,7 +162,6 @@ local Config = (function()
                 local item = config.playlist[idx]
                 if item.duration > 0 then
                     playlist[#playlist+1] = {
-                        index = idx,
                         offset = offset,
                         total_duration = total_duration,
                         duration = item.duration,
@@ -189,11 +187,58 @@ local Config = (function()
     }
 end)()
 
+local Intermissions = (function()
+    local intermissions = {}
+    local intermissions_serial = {}
+
+    util.file_watch("intermission.json", function(raw)
+        intermissions = json.decode(raw)
+    end)
+
+    local serial = sys.get_env "SERIAL"
+    if serial then
+        util.file_watch("intermission-" .. serial .. ".json", function(raw)
+            intermissions_serial = json.decode(raw)
+        end)
+    end
+
+    local function get_playlist()
+        local now = os.time()
+        local playlist = {}
+
+        local function add_from_intermission(intermissions)
+            for idx = 1, #intermissions do
+                local intermission = intermissions[idx]
+                if intermission.starts <= now and now <= intermission.ends then
+                    playlist[#playlist+1] = {
+                        duration = intermission.duration,
+                        asset_name = intermission.asset_name,
+                        type = intermission.type,
+                    }
+                end
+            end
+        end
+
+        add_from_intermission(intermissions)
+        add_from_intermission(intermissions_serial)
+
+        return playlist
+    end
+
+    return {
+        get_playlist = get_playlist;
+    }
+end)()
+
 local Scheduler = (function()
     local playlist_offset = 0
 
     local function get_next()
-        local playlist = Config.get_playlist()
+        local playlist = Intermissions.get_playlist()
+        if #playlist == 0 then
+            playlist = Config.get_playlist()
+        end
+
         local item
         item, playlist_offset = cycled(playlist, playlist_offset)
         print(string.format("next scheduled item is %s [%f]", item.asset_name, item.duration))

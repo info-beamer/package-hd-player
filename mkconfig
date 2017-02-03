@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os, json, subprocess
+import sys, os, json, subprocess
 
 IMAGE_DURATION = 5
 
@@ -23,7 +23,11 @@ for fname in os.listdir('.'):
         assets.append((fname, "video", video_duration(fname)))
 assets.sort()
 
-with file('config.json', 'wb') as f:
+target = 'config.json'
+if len(sys.argv) > 1:
+    target = sys.argv[1]
+
+with file(target, 'wb') as f:
     f.write(json.dumps(dict(
         playlist = [dict(
             duration = duration,
