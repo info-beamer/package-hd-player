@@ -431,22 +431,6 @@ local VideoJob = function(item, ctx, fn)
     return true
 end
 
-local Time = (function()
-    local base
-    util.data_mapper{
-        ["clock/set"] = function(t)
-            base = tonumber(t) - sys.now()
-        end
-    }
-    return {
-        get = function()
-            if base then
-                return base + sys.now()
-            end
-        end
-    }
-end)()
-
 local Queue = (function()
     local jobs = {}
     local scheduled_until = sys.now()
@@ -508,11 +492,11 @@ local Queue = (function()
         local playlist = Config.get_playlist()
 
         local now = sys.now()
-        local unix = Time.get()
-        if not unix then
+        local unix = os.time()
+        if unix < 100000 then
             return
         end
-        print()
+
         local schedule_time = unix + scheduled_until - now + 0.05
 
         print("unix now", unix)
