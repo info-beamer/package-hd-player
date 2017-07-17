@@ -89,8 +89,8 @@
             "valid": ["image", "video"],
             "default": "empty.png"
         }, {
-            "title": "Play time",
-            "ui_width": 3,
+            "title": "Play time (in seconds)",
+            "ui_width": 4,
             "name": "duration",
             "type": "duration",
             "hint": "How long should this item be displayed on screen. For videos, use their duration",
