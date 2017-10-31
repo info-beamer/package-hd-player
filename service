@@ -1,0 +1,19 @@
+#!/usr/bin/python2.7
+import time
+import pytz
+import json
+from datetime import datetime
+from hosted import CONFIG, NODE
+
+CONFIG.restart_on_update()
+
+tz = pytz.timezone(CONFIG['timezone'])
+
+while 1:
+    now = datetime.now(pytz.utc).astimezone(tz)
+    NODE["/date"](json.dumps(dict(
+        year = now.year,
+        month = now.month,
+        day = now.day,
+    )))
+    time.sleep(5)

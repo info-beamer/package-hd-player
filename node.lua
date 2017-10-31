@@ -66,6 +66,20 @@ local white = resource.create_colored_texture(1,1,1,1)
 local black = resource.create_colored_texture(0,0,0,1)
 local font = resource.load_font "roboto.ttf"
 
+local now_date = {year=1, month=1, day=1}
+
+local function date_within(starts, ends)
+    local function expand(date)
+        return date.year * 600 + date.month * 40 + date.day
+    end
+
+    local n = expand(now_date)
+    local s = starts == json.null and 0 or expand(starts)
+    local e = ends == json.null and 10000000 or expand(ends)
+
+    return n >= s and n <= e
+end
+
 local function ramp(t_s, t_e, t_c, ramp_time)
     if ramp_time == 0 then return 1 end
     local delta_s = t_c - t_s
@@ -108,6 +122,7 @@ end)()
 
 local Config = (function()
     local playlist = {}
+    local raw_playlist = {}
     local switch_time = 1
     local synced = false
     local kenburns = false
@@ -130,6 +145,39 @@ local Config = (function()
         print "[WARNING]: will use static-config.json, so config.json is ignored"
     end
 
+    local function reload_playlist()
+        playlist = {}
+
+        local offset = 0
+        for idx = 1, #raw_playlist do
+            local item = raw_playlist[idx]
+            local is_scheduled = date_within(item.starts, item.ends)
+            if item.duration > 0 and is_scheduled then
+                playlist[#playlist+1] = {
+                    offset = offset,
+                    duration = item.duration,
+                    asset_name = item.file.asset_name,
+                    type = item.file.type,
+                }
+                offset = offset + item.duration
+            end
+        end
+
+        local total_duration = offset
+
+        for idx = 1, #playlist do
+            local item = playlist[idx]
+            item.total_duration = total_duration
+        end
+
+        if #playlist == 0 then
+            playlist = settings.FALLBACK_PLAYLIST
+        end
+
+        print "new playlist"
+        pp(playlist)
+    end
+
     util.file_watch(config_file, function(raw)
         print("updated " .. config_file)
         local config = json.decode(raw)
@@ -138,6 +186,7 @@ local Config = (function()
         kenburns = config.kenburns
         audio = config.audio
         progress = config.progress
+        switch_time = config.switch_time
 
         rotation = config.rotation
         portrait = rotation == 90 or rotation == 270
@@ -145,34 +194,8 @@ local Config = (function()
         transform = util.screen_transform(rotation)
         print("screen size is " .. WIDTH .. "x" .. HEIGHT)
 
-        if #config.playlist == 0 then
-            playlist = settings.FALLBACK_PLAYLIST
-            switch_time = 0
-            kenburns = false
-        else
-            playlist = {}
-            local total_duration = 0
-            for idx = 1, #config.playlist do
-                local item = config.playlist[idx]
-                total_duration = total_duration + item.duration
-            end
-
-            local offset = 0
-            for idx = 1, #config.playlist do
-                local item = config.playlist[idx]
-                if item.duration > 0 then
-                    playlist[#playlist+1] = {
-                        offset = offset,
-                        total_duration = total_duration,
-                        duration = item.duration,
-                        asset_name = item.file.asset_name,
-                        type = item.file.type,
-                    }
-                    offset = offset + item.duration
-                end
-            end
-            switch_time = config.switch_time
-        end
+        raw_playlist = config.playlist
+        reload_playlist()
     end)
 
     return {
@@ -183,9 +206,17 @@ local Config = (function()
         get_audio = function() return audio end;
         get_progress = function() return progress end;
         get_rotation = function() return rotation, portrait end;
+        reload_playlist = reload_playlist;
         apply_transform = function() return transform() end;
     }
 end)()
+
+util.data_mapper{
+    date = function(raw)
+        now_date = json.decode(raw)
+        Config.reload_playlist()
+    end
+}
 
 local Intermissions = (function()
     local intermissions = {}
