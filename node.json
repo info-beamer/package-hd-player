@@ -446,7 +446,7 @@
             "type": "date",
             "allow_empty": true,
             "hint": "When should the content first play? Leave empty to start scheduling this content immediately.",
-            "default": "utc-today"
+            "default": null
         }, {
             "title": "End (incl)",
             "ui_width": 3,
@@ -454,7 +454,7 @@
             "type": "date",
             "allow_empty": true,
             "hint": "When should the content first play? Leave empty to play this content forever.",
-            "default": "utc-today"
+            "default": null
         }]
     }]
 }
