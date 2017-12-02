@@ -2,6 +2,8 @@ gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
 
 local json = require "json"
 
+math.randomseed(os.time())
+
 local shaders = {
     multisample = resource.create_shader[[
         uniform sampler2D Texture;
