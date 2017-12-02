@@ -106,6 +106,14 @@ local Loading = (function()
     }
 end)()
 
+local function shuffle(tbl)
+    local size = #tbl
+    for i = size, 1, -1 do
+        local rand = math.random(size)
+        tbl[i], tbl[rand] = tbl[rand], tbl[i]
+    end
+end
+
 local Config = (function()
     local playlist = {}
     local switch_time = 1
@@ -150,6 +158,7 @@ local Config = (function()
             switch_time = 0
             kenburns = false
         else
+            shuffle(config.playlist)
             playlist = {}
             local total_duration = 0
             for idx = 1, #config.playlist do
