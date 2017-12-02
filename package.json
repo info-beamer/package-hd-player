@@ -1,6 +1,6 @@
 {
-    "name": "HD Image/Video Player",
+    "name": "HD Image/Video Player (Random)",
     "author": "Florian Wesch <fw@info-beamer.com>",
-    "desc": "Displays images and videos in a rotation",
+    "desc": "Displays images and videos in a rotation in random order",
     "repository": "https://github.com/info-beamer/package-hd-player"
 }
