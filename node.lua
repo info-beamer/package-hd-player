@@ -341,7 +341,7 @@ local ImageJob = function(item, ctx, fn)
                 y = lerp(from.y, to.y, t);
                 s = lerp(from.s, to.s, t);
             }
-            util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
+            res:draw(0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
             draw_progress(ctx.starts, ctx.ends, now)
@@ -353,7 +353,7 @@ local ImageJob = function(item, ctx, fn)
     else
         while true do
             local now = sys.now()
-            util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
+            res:draw(0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
             draw_progress(ctx.starts, ctx.ends, now)
@@ -413,8 +413,7 @@ local VideoJob = function(item, ctx, fn)
             if portrait then
                 width, height = height, width
             end
-            local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-            res:layer(layer):rotate(rotation):target(x1, y1, x2, y2, ramp(
+            res:layer(layer):rotate(rotation):target(0, 0, WIDTH, HEIGHT, ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
         end
