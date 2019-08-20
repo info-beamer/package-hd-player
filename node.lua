@@ -374,12 +374,12 @@ end
 local VideoJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.VIDEO_PRELOAD)
 
-    local raw = sys.get_ext "raw_video"
-    local res = raw.load_video{
+    local res = resource.load_video{
         file = ctx.asset,
         audio = Config.get_audio(),
         looped = false,
         paused = true,
+        raw = true,
     }
 
     for now in fn.wait_next_frame do
