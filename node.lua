@@ -414,7 +414,7 @@ local VideoJob = function(item, ctx, fn)
                 width, height = height, width
             end
             local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-            res:layer(layer):rotate(rotation):target(x1, y1, x2, y2, ramp(
+            res:layer(layer):place(x1, y1, x2, y2, rotation):alpha(ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
             ))
         end
