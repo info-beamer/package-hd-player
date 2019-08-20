@@ -83,7 +83,7 @@
         "itemname": "Item",
         "items": [{
             "title": "Asset",
-            "ui_width": 5,
+            "ui_width": 8,
             "name": "file",
             "type": "resource",
             "valid": ["image", "video"],
