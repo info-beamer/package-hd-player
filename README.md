@@ -70,3 +70,9 @@ more information about this and other options possible.
 Please report any problems you encounter using this package here:
 
 https://github.com/info-beamer/package-hd-player/issues
+
+# Changelog
+
+## Version 2019-08-22
+
+Now compatible with the Pi4

@@ -3,5 +3,6 @@
     "author": "Florian Wesch <fw@info-beamer.com>",
     "desc": "Displays images and videos in a rotation",
     "repository": "https://github.com/info-beamer/package-hd-player",
-    "platforms": ["pi/v6", "pi/v7", "pi/v8"]
+    "platforms": ["pi/v6", "pi/v7", "pi/v8"],
+    "version": "2019-08-22"
 }
