@@ -476,7 +476,7 @@ local VideoHEVCJob = function(item, ctx, fn)
                 width, height = height, width
             end
             local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-            res:layer(-2):place(x1, y1, x2, y2, rotation):alpha(ramp(
+            res:layer(-1):place(x1, y1, x2, y2, rotation):alpha(ramp(
                 ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now, Config.get_switch_time()
             ))
         end
