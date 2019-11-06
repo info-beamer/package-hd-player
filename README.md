@@ -73,6 +73,14 @@ https://github.com/info-beamer/package-hd-player/issues
 
 # Changelog
 
+## Version 2019-11-06.hevc
+
+This package can now play HEVC videos with up to 4K resolution on the Pi4.
+Right now only a single HEVC decoder can be used at the same time. This
+prevents the player from seamlessly switching between videos. Instead it
+has to pause for a brief moment (with a black screen) while it's loading
+the next video. This might be solved in a future version of info-beamer.
+
 ## Version 2019-08-22
 
 Now compatible with the Pi4

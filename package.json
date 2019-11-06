@@ -4,5 +4,5 @@
     "desc": "Displays images and videos in a rotation",
     "repository": "https://github.com/info-beamer/package-hd-player",
     "platforms": ["pi/v6", "pi/v7", "pi/v8"],
-    "version": "2019-08-22"
+    "version": "2019-11-06.hevc"
 }
