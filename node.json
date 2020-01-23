@@ -87,7 +87,7 @@
             "name": "file",
             "type": "resource",
             "valid": ["image", "video"],
-            "features": ["hevc"],
+            "features": ["hevc", "image4k"],
             "default": "empty.png"
         }, {
             "title": "Play time (in seconds)",
