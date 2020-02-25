@@ -65,6 +65,12 @@ you have to do for this packages is to create a `config.json` file.
 Have a look at [the advanced documentation](ADVANCED.md) for
 more information about this and other options possible.
 
+# Offline
+
+You cannot use the [Synchronized start](#synced) feature offline as
+it requires a precise system time across multiple devices. This usually
+requires network access to reach an NTP server.
+
 ## Problems?
 
 Please report any problems you encounter using this package here:
