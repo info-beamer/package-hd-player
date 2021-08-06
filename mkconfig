@@ -7,8 +7,8 @@ IMAGE_DURATION = 5
 # apt-get install libav-tools
 def video_duration(fname):
     return float(subprocess.Popen([
-        "avprobe", "-show_format_entry", "duration", fname
-    ], stdout=subprocess.PIPE, stderr=file('/dev/null', 'wb')).stdout.read())
+        "ffprobe", "-v", "error", "-show_entries",  "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", fname
+    ], stdout=subprocess.PIPE, stderr=open('/dev/null', 'wb')).stdout.read())
 
 assets = []
 for fname in os.listdir('.'):
@@ -27,7 +27,7 @@ target = 'config.json'
 if len(sys.argv) > 1:
     target = sys.argv[1]
 
-with file(target, 'wb') as f:
+with open(target, 'wb') as f:
     f.write(json.dumps(dict(
         playlist = [dict(
             duration = duration,
