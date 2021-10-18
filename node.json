@@ -446,7 +446,7 @@
             "name": "starts",
             "type": "date",
             "allow_empty": true,
-            "hint": "When should the content first play? Leave empty to start scheduling this content immediately.",
+            "hint": "When should the content first play? Leave empty to start scheduling this content immediately",
             "default": ""
         }, {
             "title": "End (incl)",
@@ -454,7 +454,7 @@
             "name": "ends",
             "type": "date",
             "allow_empty": true,
-            "hint": "When should the content first play? Leave empty to play this content forever.",
+            "hint": "When should the content last play? Leave empty to play this content forever",
             "default": ""
         }]
     }]

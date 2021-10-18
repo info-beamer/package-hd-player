@@ -1,5 +1,5 @@
 {
-    "name": "HD Image/Video Player",
+    "name": "HD Image/Video Player + Schedule",
     "author": "Florian Wesch <fw@info-beamer.com>",
     "desc": "Displays images and videos in a rotation",
     "repository": "https://github.com/info-beamer/package-hd-player",

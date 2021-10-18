@@ -154,30 +154,23 @@ local Config = (function()
             local item = raw_playlist[idx]
             local is_scheduled = date_within(item.starts, item.ends)
             if item.duration > 0 and is_scheduled then
-                playlist[#playlist+1] = {
-                    offset = offset,
-                    duration = item.duration,
-                    asset_name = item.file.asset_name,
-                    type = item.file.type,
-                }
-                offset = offset + item.duration
-
                 local format = item.file.metadata and item.file.metadata.format
+                local duration = item.duration + (
+                    -- stretch play slot by HEVC load time, as HEVC
+                    -- decoders cannot overlap, so we have to load
+                    -- the video while we're scheduled, instead
+                    -- of preloading... maybe that'll change in the
+                    -- future.
+                    format == "hevc" and settings.HEVC_LOAD_TIME or 0
+                )
                 playlist[#playlist+1] = {
                     offset = offset,
-                    duration = item.duration + (
-                        -- stretch play slot by HEVC load time, as HEVC
-                        -- decoders cannot overlap, so we have to load
-                        -- the video while we're scheduled, instead
-                        -- of preloading... maybe that'll change in the
-                        -- future.
-                        format == "hevc" and settings.HEVC_LOAD_TIME or 0
-                    ),
+                    duration = duration,
                     format = format,
                     asset_name = item.file.asset_name,
                     type = item.file.type,
                 }
-                offset = offset + item.duration
+                offset = offset + duration
             end
         end
 
@@ -190,10 +183,6 @@ local Config = (function()
 
         if #playlist == 0 then
             playlist = settings.FALLBACK_PLAYLIST
-            switch_time = 0
-            kenburns = false
-        else
-            switch_time = config.switch_time
         end
 
         print "new playlist"
@@ -621,6 +610,7 @@ local Queue = (function()
             local start = now + (unix_start - unix)
             print("--> start", start)
             if start > scheduled_until - 0.05 then
+                math.randomseed(cycle)
                 return enqueue(scheduled_until, start + item.duration, item)
             end
         end
