@@ -51,6 +51,7 @@ local settings = {
     IMAGE_PRELOAD = 2;
     VIDEO_PRELOAD = 2;
     PRELOAD_TIME = 5;
+    HEVC_LOAD_TIME = 0.5;
     FALLBACK_PLAYLIST = {
         {
             offset = 0;
@@ -160,6 +161,23 @@ local Config = (function()
                     type = item.file.type,
                 }
                 offset = offset + item.duration
+
+                local format = item.file.metadata and item.file.metadata.format
+                playlist[#playlist+1] = {
+                    offset = offset,
+                    duration = item.duration + (
+                        -- stretch play slot by HEVC load time, as HEVC
+                        -- decoders cannot overlap, so we have to load
+                        -- the video while we're scheduled, instead
+                        -- of preloading... maybe that'll change in the
+                        -- future.
+                        format == "hevc" and settings.HEVC_LOAD_TIME or 0
+                    ),
+                    format = format,
+                    asset_name = item.file.asset_name,
+                    type = item.file.type,
+                }
+                offset = offset + item.duration
             end
         end
 
@@ -172,6 +190,10 @@ local Config = (function()
 
         if #playlist == 0 then
             playlist = settings.FALLBACK_PLAYLIST
+            switch_time = 0
+            kenburns = false
+        else
+            switch_time = config.switch_time
         end
 
         print "new playlist"
@@ -402,15 +424,15 @@ local ImageJob = function(item, ctx, fn)
 end
 
 
-local VideoJob = function(item, ctx, fn)
+local VideoH264Job = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.VIDEO_PRELOAD)
 
-    local raw = sys.get_ext "raw_video"
-    local res = raw.load_video{
+    local res = resource.load_video{
         file = ctx.asset,
         audio = Config.get_audio(),
         looped = false,
         paused = true,
+        raw = true,
     }
 
     for now in fn.wait_next_frame do
@@ -445,11 +467,63 @@ local VideoJob = function(item, ctx, fn)
                 width, height = height, width
             end
             local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
-            res:layer(layer):rotate(rotation):target(x1, y1, x2, y2, ramp(
+            res:layer(layer):alpha(ramp(
                 ctx.starts, ctx.ends, now, Config.get_switch_time()
-            ))
+            )):place(x1, y1, x2, y2, rotation)
         end
         draw_progress(ctx.starts, ctx.ends, now)
+        if now > ctx.ends then
+            break
+        end
+        fn.wait_next_frame()
+    end
+
+    print("<<< VIDEO", res, ctx.starts, ctx.ends)
+    res:dispose()
+
+    return true
+end
+
+local VideoHEVCJob = function(item, ctx, fn)
+    fn.wait_t(ctx.starts)
+
+    local res = resource.load_video{
+        file = ctx.asset,
+        audio = Config.get_audio(),
+        looped = false,
+        paused = true,
+        raw = true,
+    }
+
+    for now in fn.wait_next_frame do
+        local state, err = res:state()
+        if state == "paused" then
+            break
+        elseif state == "error" then
+            error("preloading failed: " .. err)
+        end
+    end
+
+    print "waiting for start"
+    fn.wait_t(ctx.starts + settings.HEVC_LOAD_TIME)
+
+    print(">>> VIDEO", res, ctx.starts, ctx.ends)
+    res:start()
+
+    while true do
+        local now = sys.now()
+        local rotation, portrait = Config.get_rotation()
+        local state, width, height = res:state()
+        if state ~= "finished" then
+            if portrait then
+                width, height = height, width
+            end
+            local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
+            res:layer(-1):alpha(ramp(
+                ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now, Config.get_switch_time()
+            )):place(x1, y1, x2, y2, rotation)
+        end
+        draw_progress(ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now)
         if now > ctx.ends then
             break
         end
@@ -469,7 +543,10 @@ local Queue = (function()
     local function enqueue(starts, ends, item)
         local co = coroutine.create(({
             image = ImageJob,
-            video = VideoJob,
+            video = ({
+                h264 = VideoH264Job,
+                hevc = VideoHEVCJob,
+            })[item.format],
         })[item.type])
 
         local success, asset = pcall(resource.open_file, item.asset_name)

@@ -1,6 +1,16 @@
 {
     "name": "HD Image/Video Player",
-    "author": "Florian Wesch <fw@dividuum.de>",
+    "author": "Florian Wesch <fw@info-beamer.com>",
     "desc": "Displays images and videos in a rotation",
-    "repository": "https://github.com/info-beamer/package-hd-player"
+    "repository": "https://github.com/info-beamer/package-hd-player",
+    "platforms": ["pi/v6", "pi/v7", "pi/v8"],
+    "version": "2019-11-06.hevc",
+    "offline": {
+        "support": "maybe",
+        "info": "Synced playback will not work without correct system time"
+    },
+    "nesting": {
+        "parents": ["top-level"],
+        "childs": []
+    }
 }
