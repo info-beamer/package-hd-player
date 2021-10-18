@@ -152,35 +152,35 @@ local Config = (function()
             kenburns = false
         else
             playlist = {}
-            local total_duration = 0
-            for idx = 1, #config.playlist do
-                local item = config.playlist[idx]
-                total_duration = total_duration + item.duration
-            end
 
             local offset = 0
-            for idx = 1, #config.playlist do
-                local item = config.playlist[idx]
+            for _, item in ipairs(config.playlist) do
                 if item.duration > 0 then
                     local format = item.file.metadata and item.file.metadata.format
+                    local duration = item.duration + (
+                        -- stretch play slot by HEVC load time, as HEVC
+                        -- decoders cannot overlap, so we have to load
+                        -- the video while we're scheduled, instead
+                        -- of preloading... maybe that'll change in the
+                        -- future.
+                        format == "hevc" and settings.HEVC_LOAD_TIME or 0
+                    )
                     playlist[#playlist+1] = {
                         offset = offset,
-                        total_duration = total_duration,
-                        duration = item.duration + (
-                            -- stretch play slot by HEVC load time, as HEVC
-                            -- decoders cannot overlap, so we have to load
-                            -- the video while we're scheduled, instead
-                            -- of preloading... maybe that'll change in the
-                            -- future.
-                            format == "hevc" and settings.HEVC_LOAD_TIME or 0
-                        ),
+                        duration = duration,
                         format = format,
                         asset_name = item.file.asset_name,
                         type = item.file.type,
                     }
-                    offset = offset + item.duration
+                    offset = offset + duration
                 end
             end
+
+            local total_duration = offset
+            for _, item in ipairs(playlist) do
+                item.total_duration = total_duration
+            end
+
             switch_time = config.switch_time
         end
     end)
@@ -578,6 +578,7 @@ local Queue = (function()
             local start = now + (unix_start - unix)
             print("--> start", start)
             if start > scheduled_until - 0.05 then
+                math.randomseed(cycle)
                 return enqueue(scheduled_until, start + item.duration, item)
             end
         end

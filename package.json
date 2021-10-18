@@ -4,7 +4,7 @@
     "desc": "Displays images and videos in a rotation",
     "repository": "https://github.com/info-beamer/package-hd-player",
     "platforms": ["pi/v6", "pi/v7", "pi/v8"],
-    "version": "2019-11-06.hevc",
+    "version": "2021-10-18",
     "offline": {
         "support": "maybe",
         "info": "Synced playback will not work without correct system time"

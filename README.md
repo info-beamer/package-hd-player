@@ -79,6 +79,10 @@ https://github.com/info-beamer/package-hd-player/issues
 
 # Changelog
 
+## Version 2021-10-18
+
+Fixed synced playback when using HEVC videos. Synchronize Ken Burns effect.
+
 ## Version 2019-11-06.hevc
 
 This package can now play HEVC videos with up to 4K resolution on the Pi4.
