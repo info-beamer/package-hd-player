@@ -34,6 +34,9 @@ with open(target, 'wb') as f:
             file = dict(
                 asset_name = fname,
                 type = type,
+                metadata = dict(
+                    format = 'h264',
+                ),
             )
         ) for fname, type, duration in assets],
         switch_time = 0,
