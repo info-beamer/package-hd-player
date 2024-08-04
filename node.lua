@@ -1,6 +1,11 @@
 gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
 
 local json = require "json"
+local legacy_hevc = not sys.provides "kms"
+
+if legacy_hevc then
+    print "Using legacy HEVC playback with non-overlapping decoders"
+end
 
 local shaders = {
     multisample = resource.create_shader[[
@@ -158,12 +163,13 @@ local Config = (function()
                 if item.duration > 0 then
                     local format = item.file.metadata and item.file.metadata.format
                     local duration = item.duration + (
-                        -- stretch play slot by HEVC load time, as HEVC
+                        -- On legacy OS versions prior to v14:
+                        -- Stretch play slot by HEVC load time, as HEVC
                         -- decoders cannot overlap, so we have to load
                         -- the video while we're scheduled, instead
                         -- of preloading... maybe that'll change in the
                         -- future.
-                        format == "hevc" and settings.HEVC_LOAD_TIME or 0
+                        (format == "hevc" and legacy_hevc) and settings.HEVC_LOAD_TIME or 0
                     )
                     playlist[#playlist+1] = {
                         offset = offset,
@@ -381,7 +387,7 @@ local ImageJob = function(item, ctx, fn)
 end
 
 
-local VideoH264Job = function(item, ctx, fn)
+local VideoJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.VIDEO_PRELOAD)
 
     local res = resource.load_video{
@@ -441,7 +447,7 @@ local VideoH264Job = function(item, ctx, fn)
     return true
 end
 
-local VideoHEVCJob = function(item, ctx, fn)
+local LegacyHEVCJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts)
 
     local res = resource.load_video{
@@ -501,8 +507,8 @@ local Queue = (function()
         local co = coroutine.create(({
             image = ImageJob,
             video = ({
-                h264 = VideoH264Job,
-                hevc = VideoHEVCJob,
+                h264 = VideoJob,
+                hevc = legacy_hevc and LegacyHEVCJob or VideoJob,
             })[item.format],
         })[item.type])
 
@@ -587,8 +593,6 @@ local Queue = (function()
     end
 
     local function tick()
-        gl.clear(0, 0, 0, 0)
-
         if Config.get_synced() then
             if sys.now() + settings.PRELOAD_TIME > scheduled_until then
                 schedule_synced()
@@ -633,7 +637,7 @@ util.set_interval(1, node.gc)
 
 function node.render()
     -- print("--- frame", sys.now())
-    gl.clear(0, 0, 0, 1)
+    gl.clear(0, 0, 0, 0)
     Config.apply_transform()
     Queue.tick()
 end

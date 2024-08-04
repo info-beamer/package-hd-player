@@ -2,21 +2,24 @@
 
 # Description
 
-A very simple media player that can display FullHD videos as well as PNG/JPEG images.
+A very simple media player that can display FullHD or 4K videos as well as PNG/JPEG images.
 
 # Example usage
 
-You can use this Package to display a bunch of images. Upload the images using
-the assets page. Then create a new Setup based on this Package. To do that, go to
-the packages page, select the **HD Player** Package and then click the **Create Setup**
-button. Give your new Setup a name.
+You can use this package to display a videos and images in a loop. Upload your assets
+using the "Assets" section. Then create a new setup based on this package. To do that, go to
+the packages page, select the **HD Player** package and then click the **Create setup**
+button. Give your new setup a name.
 
-The configuration screen for your new Setup allows you to specify which assets
-you want to play. Click the **Add item** Button for each Asset you want to play.
-In the new row that appears, select the **Asset** field. Delete the default
-value (empty.png) and select the image you previously uploaded.
+The configuration screen for your new setup allows you to specify which assets
+you want to play. Click the **Add item** button and select one or more videos or
+images. They will be added to this setup's playlist.
 
-When done, click save. Your Setup is now ready for your Device.
+Alternatively you can also add one or more native info-beamer playlists created
+within the "Playlist" section in your account. Modifying the playlist will then update each
+setup that uses this playlist.
+
+When done, click "Save". Your setup is now ready for your device.
 
 # Settings
 
@@ -35,6 +38,10 @@ correctly on portrait or landscape screens.
 
 Displays an optional progress indicator that allows viewers to see how
 long the current content will be shown on the screen.
+
+Setting this to "Disabled" can improve video playback performance on Pi4
+and Pi5 as this avoids rendering the necessary overlay. This can be helpful
+for 4K videos with high framerates.
 
 ## Synchronized Start (synced)
 
@@ -78,6 +85,12 @@ Please report any problems you encounter using this package here:
 https://github.com/info-beamer/package-hd-player/issues
 
 # Changelog
+
+## Version 2024-08-04
+
+HEVC videos are now gapless on the latest stable OS release v14. If you
+run a mix of old and new OS releases, synced playback won't work: Ensure
+all devices run the same OS release if you use synced playback.
 
 ## Version 2021-10-18
 
