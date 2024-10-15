@@ -1,11 +1,12 @@
 {
     "name": "Player",
+    "expand_schedules": true,
     "options": [{
         "title": "Configuration",
         "type": "section"
     }, {
         "title": "Switch time",
-        "ui_width": 4,
+        "ui_width": 3,
         "name": "switch_time",
         "type": "select",
         "doc_link": true,
@@ -18,7 +19,7 @@
         "default": 0.0
     }, {
         "title": "Display rotation",
-        "ui_width": 4,
+        "ui_width": 3,
         "name": "rotation",
         "type": "select",
         "hint": "Rotate content clockwise?",
@@ -32,7 +33,7 @@
         "default": 0
     }, {
         "title": "Progress indicator",
-        "ui_width": 4,
+        "ui_width": 3,
         "name": "progress",
         "type": "select",
         "hint": "Shows how long the current playlist item is displayed",
@@ -48,28 +49,48 @@
         ],
         "default": "no"
     }, {
-        "title": "Synced playback",
-        "ui_width": 4,
+        "title": "Idle image",
+        "ui_width": 3,
+        "name": "idle",
+        "type": "resource",
+        "doc_link": true,
+        "valid": ["image"],
+        "default": "loading.png"
+    }, {
+        "title": "Playback",
+        "ui_width": 3,
         "name": "synced",
-        "type": "boolean",
+        "type": "select",
         "hint": "Start play list items synchronized on multiple devices (based on the global wall clock time)",
         "doc_link": true,
+        "options": [
+            [false, "Unsynced"],
+            [true, "Synced across devices"]
+        ],
         "default": false
     }, {
-        "title": "Ken Burns effect for images",
-        "ui_width": 4,
+        "title": "Image effect",
+        "ui_width": 3,
         "name": "kenburns",
-        "type": "boolean",
+        "type": "select",
         "hint": "Slowly pan and zoom displayed images using the Ken Burns effect",
         "doc_link": true,
+        "options": [
+            [false, "No effect"],
+            [true, "Ken Burns effect"]
+        ],
         "default": false
     }, {
-        "title": "Play audio for videos",
-        "ui_width": 4,
+        "title": "Audio",
+        "ui_width": 3,
         "name": "audio",
-        "type": "boolean",
+        "type": "select",
         "hint": "Play audio for all videos",
         "doc_link": true,
+        "options": [
+            [false, "No audio"],
+            [true, "Audio for videos"]
+        ],
         "default": false
     },
 
@@ -83,7 +104,7 @@
         "itemname": "Item",
         "items": [{
             "title": "Asset",
-            "ui_width": 8,
+            "ui_width": 6,
             "name": "file",
             "type": "resource",
             "valid": ["image", "video"],
@@ -91,11 +112,17 @@
             "default": "empty.png"
         }, {
             "title": "Play time (in seconds)",
-            "ui_width": 4,
+            "ui_width": 2,
             "name": "duration",
             "type": "duration",
             "hint": "How long should this item be displayed on screen. For videos, use their duration",
             "default": 5
+        }, {
+            "title": "Schedule",
+            "name": "schedule",
+            "ui_width": 4,
+            "type": "schedule",
+            "default": "always"
         }]
     }]
 }

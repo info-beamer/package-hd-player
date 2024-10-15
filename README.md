@@ -19,6 +19,10 @@ Alternatively you can also add one or more native info-beamer playlists created
 within the "Playlist" section in your account. Modifying the playlist will then update each
 setup that uses this playlist.
 
+Each item can be scheduled. Click on the calendar icon in the "Schedule" option of each
+item to set a schedule. The schedule is based on the timezone configured for each device.
+You can reconfigure a device's timezone in the device list by clicking on its timezone.
+
 When done, click "Save". Your setup is now ready for your device.
 
 # Settings
@@ -43,6 +47,12 @@ Setting this to "Disabled" can improve video playback performance on Pi4
 and Pi5 as this avoids rendering the necessary overlay. This can be helpful
 for 4K videos with high framerates.
 
+## Idle image (idle)
+
+An image shown if nothing is scheduled (or if the playlist is empty) or
+if synchronized playback is active and playback has to wait for the next
+synced playback sync point.
+
 ## Synchronized Start (synced)
 
 Allows you to play one or multiple playlist synchronized accross multiple
@@ -63,15 +73,6 @@ displayed. The movement is chosen randomly from a predefined set.
 
 Play audio track for all video files. By default the playback is silent.
 
-# Running outside of info-beamer hosted
-
-All info-beamer hosted packages can be run with the standalone
-info-beamer pi program with a little (or a little more) work. All
-you have to do for this packages is to create a `config.json` file.
-
-Have a look at [the advanced documentation](ADVANCED.md) for
-more information about this and other options possible.
-
 # Offline
 
 You cannot use the [Synchronized start](#synced) feature offline as
@@ -85,6 +86,14 @@ Please report any problems you encounter using this package here:
 https://github.com/info-beamer/package-hd-player/issues
 
 # Changelog
+
+## Version 2024-10-14
+
+* Add support for scheduled items. You can either schedule individual
+  items or embed playlists with items already scheduled.
+* Added "idle image" that is shown if either nothing is scheduled or
+  if synced playback is active and playback has to wait for the next
+  sync point.
 
 ## Version 2024-08-04
 

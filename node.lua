@@ -1,10 +1,18 @@
 gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
 
+util.no_globals()
+
 local json = require "json"
 local legacy_hevc = not sys.provides "kms"
 
+local now = os.time()
+
 if legacy_hevc then
     print "Using legacy HEVC playback with non-overlapping decoders"
+end
+
+local function printf(fmt, ...)
+    return print(string.format(fmt, ...))
 end
 
 local shaders = {
@@ -57,15 +65,6 @@ local settings = {
     VIDEO_PRELOAD = 2;
     PRELOAD_TIME = 5;
     HEVC_LOAD_TIME = 0.5;
-    FALLBACK_PLAYLIST = {
-        {
-            offset = 0;
-            total_duration = 1;
-            duration = 1;
-            asset_name = "blank.png";
-            type = "image";
-        }
-    }
 }
 
 local white = resource.create_colored_texture(1,1,1,1)
@@ -79,48 +78,42 @@ local function ramp(t_s, t_e, t_c, ramp_time)
     return math.min(1, delta_s * 1/ramp_time, delta_e * 1/ramp_time)
 end
 
-local function cycled(items, offset)
-    offset = offset % #items + 1
-    return items[offset], offset
+local function expand_schedule(config, schedule)
+    if schedule == 'always' or schedule == 'never' then
+        return schedule
+    end
+    return config.__schedules.expanded[schedule+1]
 end
 
-local Loading = (function()
-    local loading = "Loading..."
-    local size = 80
-    local w = font:width(loading, size)
-    local alpha = 0
-    
-    local function draw()
-        if alpha == 0 then
-            return
+local function is_schedule_active_at(schedule, probe_time)
+    if schedule == "always" then
+        return true
+    elseif schedule == "never" then
+        return false
+    end
+    local probe_time = os.time()
+    if probe_time < 10000000 then
+        return false -- no valid system time, don't schedule
+    end
+    for _, range in ipairs(schedule) do
+        local starts, duration = unpack(range)
+        if starts > probe_time then
+            break
+        elseif probe_time < starts + duration then
+            return true
         end
-        font:write((WIDTH-w)/2, (HEIGHT-size)/2, loading, size, 1,1,1,alpha)
     end
-
-    local function fade_in()
-        alpha = math.min(1, alpha + 0.01)
-    end
-
-    local function fade_out()
-        alpha = math.max(0, alpha - 0.01)
-    end
-
-    return {
-        fade_in = fade_in;
-        fade_out = fade_out;
-        draw = draw;
-    }
-end)()
+    return false
+end
 
 local Config = (function()
     local playlist = {}
-    local switch_time = 1
     local synced = false
-    local kenburns = false
-    local audio = false
     local portrait = false
     local rotation = 0
+    local progress = "no"
     local transform = function() end
+    local idle_img = nil
 
     local config_file = "config.json"
 
@@ -136,133 +129,78 @@ local Config = (function()
         print "[WARNING]: will use static-config.json, so config.json is ignored"
     end
 
-    util.file_watch(config_file, function(raw)
+    util.json_watch(config_file, function(config)
         print("updated " .. config_file)
-        local config = json.decode(raw)
 
         synced = config.synced
-        kenburns = config.kenburns
-        audio = config.audio
         progress = config.progress
+
+        if config.idle.filename == "loading.png" then
+            idle_img = nil
+        else
+            idle_img = resource.load_image(config.idle.asset_name)
+        end
 
         rotation = config.rotation
         portrait = rotation == 90 or rotation == 270
+
         gl.setup(NATIVE_WIDTH, NATIVE_HEIGHT)
         transform = util.screen_transform(rotation)
-        print("screen size is " .. WIDTH .. "x" .. HEIGHT)
 
-        if #config.playlist == 0 then
-            playlist = settings.FALLBACK_PLAYLIST
-            switch_time = 0
-            kenburns = false
-        else
-            playlist = {}
+        playlist = {}
+        for _, item in ipairs(config.playlist) do
+            if item.duration > 0 then
+                local format = item.file.metadata and item.file.metadata.format
+                local duration = item.duration + (
+                    -- On legacy OS versions prior to v14:
+                    -- Stretch play slot by HEVC load time, as HEVC
+                    -- decoders cannot overlap, so we have to load
+                    -- the video while we're scheduled, instead
+                    -- of preloading... maybe that'll change in the
+                    -- future.
+                    (format == "hevc" and legacy_hevc) and settings.HEVC_LOAD_TIME or 0
+                )
+                playlist[#playlist+1] = {
+                    duration = duration,
+                    format = format,
+                    asset = resource.open_file(item.file.asset_name),
+                    type = item.file.type,
+                    schedule = expand_schedule(config, item.schedule),
 
-            local offset = 0
-            for _, item in ipairs(config.playlist) do
-                if item.duration > 0 then
-                    local format = item.file.metadata and item.file.metadata.format
-                    local duration = item.duration + (
-                        -- On legacy OS versions prior to v14:
-                        -- Stretch play slot by HEVC load time, as HEVC
-                        -- decoders cannot overlap, so we have to load
-                        -- the video while we're scheduled, instead
-                        -- of preloading... maybe that'll change in the
-                        -- future.
-                        (format == "hevc" and legacy_hevc) and settings.HEVC_LOAD_TIME or 0
-                    )
-                    playlist[#playlist+1] = {
-                        offset = offset,
-                        duration = duration,
-                        format = format,
-                        asset_name = item.file.asset_name,
-                        type = item.file.type,
-                    }
-                    offset = offset + duration
-                end
+                    -- include playlist properties for simplicity
+                    audio = config.audio,
+                    switch_time = config.switch_time,
+                    kenburns = config.kenburns,
+                }
             end
-
-            local total_duration = offset
-            for _, item in ipairs(playlist) do
-                item.total_duration = total_duration
-            end
-
-            switch_time = config.switch_time
         end
+
+        node.gc()
     end)
 
+    local function get_playlist_at(t)
+        local scheduled_playlist = {}
+        local offset = 0
+        for _, item in ipairs(playlist) do
+            if is_schedule_active_at(item.schedule, t) then
+                item.offset = offset
+                scheduled_playlist[#scheduled_playlist+1] = item
+                offset = offset + item.duration
+            end
+        end
+        if #playlist > 0 then
+            printf("%d/%d scheduled playlist items of %.4fs", #scheduled_playlist, #playlist, offset)
+        end
+        return scheduled_playlist, offset
+    end
+
     return {
-        get_playlist = function() return playlist end;
-        get_switch_time = function() return switch_time end;
+        get_playlist_at = get_playlist_at;
+        get_idle_img = function() return idle_img end;
         get_synced = function() return synced end;
-        get_kenburns = function() return kenburns end;
-        get_audio = function() return audio end;
         get_progress = function() return progress end;
         get_rotation = function() return rotation, portrait end;
         apply_transform = function() return transform() end;
-    }
-end)()
-
-local Intermissions = (function()
-    local intermissions = {}
-    local intermissions_serial = {}
-
-    util.file_watch("intermission.json", function(raw)
-        intermissions = json.decode(raw)
-    end)
-
-    local serial = sys.get_env "SERIAL"
-    if serial then
-        util.file_watch("intermission-" .. serial .. ".json", function(raw)
-            intermissions_serial = json.decode(raw)
-        end)
-    end
-
-    local function get_playlist()
-        local now = os.time()
-        local playlist = {}
-
-        local function add_from_intermission(intermissions)
-            for idx = 1, #intermissions do
-                local intermission = intermissions[idx]
-                if intermission.starts <= now and now <= intermission.ends then
-                    playlist[#playlist+1] = {
-                        duration = intermission.duration,
-                        asset_name = intermission.asset_name,
-                        type = intermission.type,
-                    }
-                end
-            end
-        end
-
-        add_from_intermission(intermissions)
-        add_from_intermission(intermissions_serial)
-
-        return playlist
-    end
-
-    return {
-        get_playlist = get_playlist;
-    }
-end)()
-
-local Scheduler = (function()
-    local playlist_offset = 0
-
-    local function get_next()
-        local playlist = Intermissions.get_playlist()
-        if #playlist == 0 then
-            playlist = Config.get_playlist()
-        end
-
-        local item
-        item, playlist_offset = cycled(playlist, playlist_offset)
-        print(string.format("next scheduled item is %s [%f]", item.asset_name, item.duration))
-        return item
-    end
-
-    return {
-        get_next = get_next;
     }
 end)()
 
@@ -306,10 +244,52 @@ local function draw_progress(starts, ends, now)
     end
 end
 
+local Idle = (function()
+    local loading = "Loading"
+    local size = 80
+    local w = font:width(loading, size)
+
+    -- in range -1 to 1. This gives it a 1 second threshold before
+    -- it becomes active.
+    local alpha = -1
+    
+    local function draw()
+        if alpha <= 0 then
+            return
+        end
+        local img = Config.get_idle_img()
+        if img then
+            util.draw_correct(img, 0, 0, WIDTH, HEIGHT, alpha)
+        else
+            font:write(
+                (WIDTH-w)/2, (HEIGHT-size)/2, 
+                loading .. ("..."):sub(1, math.floor((sys.now()*2) % 3)+1), size,
+                1,1,1,alpha
+            )
+        end
+    end
+
+    local function fade_in()
+        alpha = math.min(1, alpha + 1/60)
+    end
+
+    local function fade_out()
+        alpha = math.max(-1, alpha - 1/60)
+    end
+
+    return {
+        fade_in = fade_in;
+        fade_out = fade_out;
+        draw = draw;
+    }
+end)()
+
+local content_on_screen
+
 local ImageJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.IMAGE_PRELOAD)
 
-    local res = resource.load_image(ctx.asset)
+    local res = resource.load_image(item.asset:copy())
 
     for now in fn.wait_next_frame do
         local state, err = res:state()
@@ -326,7 +306,7 @@ local ImageJob = function(item, ctx, fn)
 
     print(">>> IMAGE", res, ctx.starts, ctx.ends)
 
-    if Config.get_kenburns() then
+    if item.kenburns then
         local function lerp(s, e, t)
             return s + t * (e-s)
         end
@@ -338,6 +318,7 @@ local ImageJob = function(item, ctx, fn)
             {from = {x=0.07, y=0.05, s=0.91}, to = {x=0.04, y=0.03, s=0.95}},
         }
 
+        math.randomseed(ctx.starts)
         local path = paths[math.random(1, #paths)]
 
         local to, from = path.to, path.from
@@ -350,7 +331,6 @@ local ImageJob = function(item, ctx, fn)
         local shader = multisample and shaders.multisample or shaders.simple
         
         while true do
-            local now = sys.now()
             local t = (now - starts) / duration
             shader:use{
                 x = lerp(from.x, to.x, t);
@@ -358,9 +338,10 @@ local ImageJob = function(item, ctx, fn)
                 s = lerp(from.s, to.s, t);
             }
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
-                ctx.starts, ctx.ends, now, Config.get_switch_time()
+                ctx.starts, ctx.ends, now, item.switch_time
             ))
             draw_progress(ctx.starts, ctx.ends, now)
+            content_on_screen = true
             if now > ctx.ends then
                 break
             end
@@ -368,11 +349,13 @@ local ImageJob = function(item, ctx, fn)
         end
     else
         while true do
-            local now = sys.now()
             util.draw_correct(res, 0, 0, WIDTH, HEIGHT, ramp(
-                ctx.starts, ctx.ends, now, Config.get_switch_time()
+                ctx.starts, ctx.ends, now, item.switch_time
             ))
-            draw_progress(ctx.starts, ctx.ends, now)
+            if not item.idle then
+                draw_progress(ctx.starts, ctx.ends, now)
+            end
+            content_on_screen = true
             if now > ctx.ends then
                 break
             end
@@ -391,8 +374,8 @@ local VideoJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts - settings.VIDEO_PRELOAD)
 
     local res = resource.load_video{
-        file = ctx.asset,
-        audio = Config.get_audio(),
+        file = item.asset:copy(),
+        audio = item.audio,
         looped = false,
         paused = true,
         raw = true,
@@ -414,7 +397,6 @@ local VideoJob = function(item, ctx, fn)
     res:start()
 
     while true do
-        local now = sys.now()
         local rotation, portrait = Config.get_rotation()
         local state, width, height = res:state()
         if state ~= "finished" then
@@ -431,10 +413,11 @@ local VideoJob = function(item, ctx, fn)
             end
             local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
             res:layer(layer):alpha(ramp(
-                ctx.starts, ctx.ends, now, Config.get_switch_time()
+                ctx.starts, ctx.ends, now, item.switch_time
             )):place(x1, y1, x2, y2, rotation)
         end
         draw_progress(ctx.starts, ctx.ends, now)
+        content_on_screen = true
         if now > ctx.ends then
             break
         end
@@ -451,8 +434,8 @@ local LegacyHEVCJob = function(item, ctx, fn)
     fn.wait_t(ctx.starts)
 
     local res = resource.load_video{
-        file = ctx.asset,
-        audio = Config.get_audio(),
+        file = item.asset:copy(),
+        audio = item.audio,
         looped = false,
         paused = true,
         raw = true,
@@ -474,7 +457,6 @@ local LegacyHEVCJob = function(item, ctx, fn)
     res:start()
 
     while true do
-        local now = sys.now()
         local rotation, portrait = Config.get_rotation()
         local state, width, height = res:state()
         if state ~= "finished" then
@@ -483,10 +465,11 @@ local LegacyHEVCJob = function(item, ctx, fn)
             end
             local x1, y1, x2, y2 = util.scale_into(NATIVE_WIDTH, NATIVE_HEIGHT, width, height)
             res:layer(-1):alpha(ramp(
-                ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now, Config.get_switch_time()
+                ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now, item.switch_time
             )):place(x1, y1, x2, y2, rotation)
         end
         draw_progress(ctx.starts+settings.HEVC_LOAD_TIME, ctx.ends, now)
+        content_on_screen = true
         if now > ctx.ends then
             break
         end
@@ -501,9 +484,9 @@ end
 
 local Queue = (function()
     local jobs = {}
-    local scheduled_until = sys.now()
 
     local function enqueue(starts, ends, item)
+        printf('enqueueing from %.4f to %.4f (in %.4fs)', starts, ends, starts-now)
         local co = coroutine.create(({
             image = ImageJob,
             video = ({
@@ -512,21 +495,14 @@ local Queue = (function()
             })[item.format],
         })[item.type])
 
-        local success, asset = pcall(resource.open_file, item.asset_name)
-        if not success then
-            print("CANNOT GRAB ASSET: ", asset)
-            return
-        end
-
         -- an image may overlap another image
         if #jobs > 0 and jobs[#jobs].type == "image" and item.type == "image" then
-            starts = starts - Config.get_switch_time()
+            starts = starts - item.switch_time
         end
 
         local ctx = {
             starts = starts,
             ends = ends,
-            asset = asset;
         }
 
         local success, err = coroutine.resume(co, item, ctx, {
@@ -553,67 +529,76 @@ local Queue = (function()
             ctx = ctx;
             type = item.type;
         }
-
-        scheduled_until = ends
-        print("added job. scheduled program until ", scheduled_until)
     end
 
+    local scheduled_until = 0
     local function schedule_synced()
-        local starts = scheduled_until 
-        local playlist = Config.get_playlist()
-
-        local now = sys.now()
-        local unix = os.time()
-        if unix < 100000 then
+        if now < 100000 then
             return
         end
 
-        local schedule_time = unix + scheduled_until - now + 0.05
+        if now > scheduled_until then
+            -- missed scheduling. reset attempt
+            scheduled_until = now
+        end
 
-        print("unix now", unix)
-        print("schedule time:", schedule_time)
+        local playlist, total_duration = Config.get_playlist_at(scheduled_until)
+        if #playlist == 0 then
+            return
+        end
 
-        for idx = 1, #playlist do
-            local item = playlist[idx]
-            print("item", idx)
-            local cycle = math.floor(schedule_time / item.total_duration)
-            print("cycle", cycle)
-            local loop_base = cycle * item.total_duration
-            local unix_start = loop_base + item.offset
-            print("unix_start", unix_start)
-            local start = now + (unix_start - unix)
-            print("--> start", start)
-            if start > scheduled_until - 0.05 then
-                math.randomseed(cycle)
-                return enqueue(scheduled_until, start + item.duration, item)
+        printf("unix now: %.4f", now)
+
+        for idx = 1, #playlist+1 do
+            -- Find the first item with a start time basically (with a 0.05 margin)
+            -- after the current scheduled_until time. Do this by calculating the total
+            -- play cycle since 1970 and getting each item's start time based on that.
+            local item = playlist[(idx-1) % #playlist + 1]
+            local item_cycle = math.floor((idx-1) / #playlist)
+            local cycle = math.floor(scheduled_until / total_duration) + item_cycle
+            local loop_base = cycle * total_duration
+            local starts = loop_base + item.offset
+            printf("item probe %d, cycle %d, starts %.4f (%.4fs after scheduled)",
+                idx, cycle, starts, starts - scheduled_until
+            )
+            if starts > scheduled_until - 0.05 then
+                printf("scheduled until is %.4f", scheduled_until)
+                local ends = starts + item.duration
+                enqueue(starts, ends, item)
+                scheduled_until = ends
+                return
             end
         end
-        scheduled_until = now
-        print "didn't find any schedulable item"
+        scheduled_until = now + 1
+        print 'nothing found to schedule'
+    end
+
+    local offset = 0
+    local function schedule_cycle()
+        local playlist = Config.get_playlist_at(now)
+        if #playlist == 0 then
+            return
+        end
+        offset = offset % #playlist + 1
+        local item = playlist[offset]
+        local starts = math.max(now, scheduled_until)
+        local ends = starts + item.duration
+        enqueue(starts, ends, item)
+        scheduled_until = ends
+        return playlist[offset]
     end
 
     local function tick()
         if Config.get_synced() then
-            if sys.now() + settings.PRELOAD_TIME > scheduled_until then
+            if now + settings.PRELOAD_TIME > scheduled_until then
                 schedule_synced()
             end
         else
-            for try = 1,3 do
-                if sys.now() + settings.PRELOAD_TIME < scheduled_until then
-                    break
-                end
-                local item = Scheduler.get_next()
-                enqueue(scheduled_until, scheduled_until + item.duration, item)
+            if now + settings.PRELOAD_TIME > scheduled_until then
+                schedule_cycle()
             end
         end
 
-        if #jobs == 0 then
-            Loading.fade_in()
-        else
-            Loading.fade_out()
-        end
-
-        local now = sys.now()
         for idx = #jobs,1,-1 do -- iterate backwards so we can remove finished jobs
             local job = jobs[idx]
             local success, is_finished = coroutine.resume(job.co, now)
@@ -625,7 +610,13 @@ local Queue = (function()
             end
         end
 
-        Loading.draw()
+        if not content_on_screen then
+            Idle.fade_in()
+        else
+            Idle.fade_out()
+        end
+
+        Idle.draw()
     end
 
     return {
@@ -636,7 +627,8 @@ end)()
 util.set_interval(1, node.gc)
 
 function node.render()
-    -- print("--- frame", sys.now())
+    now = os.time()
+    content_on_screen = false
     gl.clear(0, 0, 0, 0)
     Config.apply_transform()
     Queue.tick()
